@@ -242,16 +242,22 @@ class ActiveRecord::Base
         if args.length == 2
           models = args.last
           column_names = args.first
+          columns_hash = {}
         else
           models = args.first
           column_names = self.column_names.dup
+          columns_hash = self.columns_hash
         end
-
+        column_types_as_is = [:hstore, :jsonb]
         array_of_attributes = models.map do |model|
           # this next line breaks sqlite.so with a segmentation fault
           # if model.new_record? || options[:on_duplicate_key_update]
             column_names.map do |name|
-              model.send( "#{name}_before_type_cast" )
+              if columns_hash.has_key?(name) && column_types_as_is.include?(columns_hash[name].type)
+                model.send(name)
+              else
+                model.send( "#{name}_before_type_cast" )
+              end
             end
           # end
         end
